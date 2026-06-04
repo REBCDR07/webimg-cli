@@ -1,0 +1,10 @@
+node_modules
+src
+test
+.github
+*.config.*
+tsconfig.json
+.eslintrc*
+.prettierrc*
+.gitignore
+coverage

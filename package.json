@@ -1,0 +1,84 @@
+{
+  "name": "@eltkof7/webimg-cli",
+  "version": "2.0.0",
+  "description": "CLI ultra-rapide pour optimiser, convertir et générer des images responsive pour le web (WebP, AVIF).",
+  "type": "module",
+  "bin": {
+    "webimg": "dist/index.js"
+  },
+  "main": "./dist/lib.js",
+  "types": "./dist/lib.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/lib.d.ts",
+      "import": "./dist/lib.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "start": "node dist/index.js",
+    "test": "tsx --test test/*.test.ts",
+    "lint": "eslint src",
+    "format": "prettier --write .",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run lint && npm run typecheck && npm run test && npm run build"
+  },
+  "keywords": [
+    "cli",
+    "webp",
+    "avif",
+    "image",
+    "optimization",
+    "sharp",
+    "responsive",
+    "resize",
+    "compress",
+    "convert",
+    "performance"
+  ],
+  "author": "eltkof7",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/REBCDR07/webimg-cli.git"
+  },
+  "bugs": {
+    "url": "https://github.com/REBCDR07/webimg-cli/issues"
+  },
+  "homepage": "https://github.com/REBCDR07/webimg-cli#readme",
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "chokidar": "^4.0.1",
+    "cli-progress": "^3.12.0",
+    "commander": "^12.1.0",
+    "globby": "^14.0.2",
+    "inquirer": "^12.11.1",
+    "ora": "^8.1.0",
+    "sharp": "^0.33.5"
+  },
+  "devDependencies": {
+    "@types/cli-progress": "^3.11.6",
+    "@types/inquirer": "^9.0.7",
+    "@types/node": "^22.7.0",
+    "@typescript-eslint/eslint-plugin": "^8.8.0",
+    "@typescript-eslint/parser": "^8.8.0",
+    "eslint": "^9.11.0",
+    "prettier": "^3.3.3",
+    "tsup": "^8.3.0",
+    "tsx": "^4.22.4",
+    "typescript": "^5.6.2"
+  }
+}
