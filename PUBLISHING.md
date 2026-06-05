@@ -31,9 +31,9 @@
 ## Mises à jour
 
 ```bash
-npm version patch   # 2.0.0 → 2.0.1
-npm version minor   # 2.0.0 → 2.1.0
-npm version major   # 2.0.0 → 3.0.0
+npm version patch   # 0.0.1 → 0.0.2
+npm version minor   # 0.0.1 → 0.1.0
+npm version major   # 0.0.1 → 1.0.0
 git push --follow-tags
 npm publish
 ```

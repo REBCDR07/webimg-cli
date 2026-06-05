@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.0.0
+## 0.0.1
 - Full TypeScript rewrite + tsup build
 - Resize (`--resize`, `--max-width`)
 - Multi-format simultaneous conversion (`--format webp,avif`)

@@ -75,7 +75,7 @@ async function executeRun(cfg: ReturnType<typeof mergeConfig>, cwd: string, repo
 const program = new Command();
 program
   .name('webimg')
-  .version('2.0.0')
+  .version('0.0.1')
   .description('CLI ultra-rapide pour optimiser, convertir et générer des images web (WebP/AVIF).');
 
 program
