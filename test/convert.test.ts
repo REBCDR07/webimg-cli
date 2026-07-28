@@ -152,6 +152,16 @@ describe('webimg-cli', () => {
     assert.equal(fs.existsSync(path.join(tmpDir, 'backup', 'red.png')), true);
   });
 
+  it('supprime la source si les sorties existent deja', async () => {
+    const firstCfg = mergeConfig({ formats: ['webp'], cache: false });
+    await runParallel(await findImages(tmpDir, firstCfg), firstCfg, tmpDir);
+    const secondCfg = mergeConfig({ formats: ['webp'], suppRef: true, cache: false });
+    const results = await runParallel(await findImages(tmpDir, secondCfg), secondCfg, tmpDir);
+
+    assert.equal(results.every((r) => r.status === 'skipped'), true);
+    assert.equal(fs.existsSync(path.join(tmpDir, 'red.png')), false);
+  });
+
   it('conserve la reference en cas d echec de conversion', async () => {
     const cfg = mergeConfig({ formats: ['webp'], suppRef: true, cache: false });
     const files = await findImages(tmpDir, cfg);

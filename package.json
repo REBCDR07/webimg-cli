@@ -1,6 +1,6 @@
 {
   "name": "@eltkof7/webimg-cli",
-  "version": "2.0.3",
+  "version": "2.0.5",
   "description": "CLI ultra-rapide pour optimiser, convertir et générer des images responsive pour le web (WebP, AVIF).",
   "readme": "README.md",
   "type": "module",

@@ -15,6 +15,12 @@
 ## 2.0.3
 - Publication corrective du package avec README et métadonnées npm vérifiés.
 
+## 2.0.4
+- `--supp-ref` supprime désormais aussi les sources lorsque les sorties existent déjà.
+
+## 2.0.5
+- Publication corrective avec README npm vérifié dans le tarball.
+
 ## 2.0.0
 - Ajout de `--supp-ref` pour supprimer les images sources après conversion réussie.
 - Validation stricte de la configuration et des options CLI.

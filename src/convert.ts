@@ -161,7 +161,8 @@ export async function convertFile(
     cache.record(sourcePath, outPaths, optionsHash);
   }
 
-  if ((!cfg.keepOriginal || cfg.suppRef) && !cfg.dryRun && results.every((r) => r.status === 'ok')) {
+  const outputsReady = results.length > 0 && results.every((r) => r.status === 'ok' || r.status === 'cached' || r.status === 'skipped');
+  if ((!cfg.keepOriginal || cfg.suppRef) && !cfg.dryRun && outputsReady) {
     try {
       if (cfg.backup) {
         const backupRoot = path.resolve(cwd, cfg.backupDir);

@@ -183,7 +183,7 @@ webimg run -i ./src/assets -o ./public/img -f webp,avif -q 80 -r
 | `--responsive <list>` | Densites a generer, par exemple `1,2,3` | aucune |
 | `--keep-metadata` | Conserve les metadata EXIF/IPTC/XMP | `false` |
 | `--replace` | Supprime le fichier source apres conversion reussie | `false` |
-| `--supp-ref` | Supprime les images sources scannees apres conversion reussie | `false` |
+| `--supp-ref` | Supprime les images sources scannees apres conversion reussie ou sortie deja existante | `false` |
 | `--backup` | Sauvegarde la source avant suppression | `false` |
 | `--backup-dir <dir>` | Dossier de backup (conserve l'arborescence) | `.webimg-backup` |
 | `--clean` | Supprime les sorties generees orphelines | `false` |
