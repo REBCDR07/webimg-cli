@@ -5,11 +5,13 @@ import ora from 'ora';
 import cliProgress from 'cli-progress';
 import path from 'node:path';
 import fs from 'node:fs';
+import packageJson from '../package.json' with { type: 'json' };
 import { findImages } from './scan.js';
-import { runParallel } from './convert.js';
+import { hasConversionErrors, runParallel } from './convert.js';
 import { loadConfig, mergeConfig, DEFAULT_CONFIG, type WebimgConfig, type OutputFormat } from './config.js';
 import { summarize, printReport, writeJsonReport, writeMarkdownReport, formatBytes } from './report.js';
 import { startWatch } from './watch.js';
+import { planOutputs } from './paths.js';
 
 const SUPPORTED_OUTPUT: OutputFormat[] = ['webp', 'avif', 'jpeg', 'png'];
 
@@ -38,18 +40,50 @@ function cliOptionsToConfig(opts: Record<string, unknown>): WebimgConfig {
   if (opts.responsive) cfg.responsive = parseDensities(String(opts.responsive));
   if (opts.keepMetadata) cfg.keepMetadata = true;
   if (opts.replace) cfg.keepOriginal = false;
+  if (opts.suppRef) cfg.suppRef = true;
   if (opts.dryRun) cfg.dryRun = true;
   if (opts.cache === false || opts.noCache) cfg.cache = false;
   if (opts.include) cfg.include = String(opts.include).split(',');
   if (opts.exclude) cfg.exclude = String(opts.exclude).split(',');
+  if (opts.backup) cfg.backup = true;
+  if (opts.backupDir) cfg.backupDir = String(opts.backupDir);
+  if (opts.clean) cfg.clean = true;
+  if (opts.concurrency !== undefined) cfg.concurrency = parseInt(String(opts.concurrency), 10);
   return cfg;
+}
+
+async function cleanOrphanedOutputs(cfg: ReturnType<typeof mergeConfig>, cwd: string, images: string[]): Promise<number> {
+  const planned = new Set(images.flatMap((source) => {
+    return planOutputs(path.resolve(cwd, source), cfg, cwd).map((output) => path.resolve(output.output));
+  }));
+  const outputRoot = cfg.output ? path.resolve(cwd, cfg.output) : path.resolve(cwd, cfg.input);
+  const candidates: string[] = [];
+  const visit = (dir: string): void => {
+    if (!fs.existsSync(dir)) return;
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const file = path.join(dir, entry.name);
+      if (entry.isDirectory()) visit(file);
+      else candidates.push(path.relative(cwd, file));
+    }
+  };
+  visit(outputRoot);
+  let removed = 0;
+  for (const file of candidates) {
+    if (!cfg.formats.includes(path.extname(file).slice(1).toLowerCase() as OutputFormat)) continue;
+    if (!/@\d+x$/i.test(path.basename(file, path.extname(file))) && !cfg.suffix && !cfg.output) continue;
+    if (!planned.has(path.resolve(cwd, file))) {
+      fs.unlinkSync(path.resolve(cwd, file));
+      removed++;
+    }
+  }
+  return removed;
 }
 
 async function executeRun(cfg: ReturnType<typeof mergeConfig>, cwd: string, reportPath?: string) {
   const images = await findImages(cwd, cfg);
   if (images.length === 0) {
     console.log(chalk.yellow('ℹ️  Aucune image trouvée.'));
-    return;
+    return [];
   }
   console.log(chalk.green(`📸 ${images.length} image(s) trouvée(s)`));
   console.log(chalk.gray(`   formats: ${cfg.formats.join(', ')} | qualité: ${cfg.quality}${cfg.dryRun ? ' | DRY-RUN' : ''}`));
@@ -61,6 +95,7 @@ async function executeRun(cfg: ReturnType<typeof mergeConfig>, cwd: string, repo
   bar.start(images.length, 0);
   const results = await runParallel(images, cfg, cwd, (done) => bar.update(done));
   bar.stop();
+  if (cfg.clean && !cfg.dryRun) console.log(chalk.gray(`🧹 ${await cleanOrphanedOutputs(cfg, cwd, images)} sortie(s) orpheline(s) supprimée(s)`));
 
   const summary = summarize(results);
   printReport(summary);
@@ -70,12 +105,13 @@ async function executeRun(cfg: ReturnType<typeof mergeConfig>, cwd: string, repo
     else writeJsonReport(reportPath, summary);
     console.log(chalk.gray(`\n📝 Rapport écrit: ${reportPath}`));
   }
+  return results;
 }
 
 const program = new Command();
 program
   .name('webimg')
-  .version('0.0.1')
+  .version(packageJson.version)
   .description('CLI ultra-rapide pour optimiser, convertir et générer des images web (WebP/AVIF).');
 
 program
@@ -119,25 +155,27 @@ program
   .option('--responsive <densities>', 'Densités (ex: 1,2,3) — génère @1x @2x @3x')
   .option('--keep-metadata', 'Conserver les métadonnées EXIF')
   .option('--replace', 'Supprimer le fichier source après conversion')
+  .option('--supp-ref', 'Supprimer les images sources scannées après conversion réussie')
   .option('--dry-run', 'Simulation sans écriture')
   .option('--no-cache', 'Désactiver le cache de hash')
   .option('--include <patterns>', 'Patterns glob (séparés par virgule)')
   .option('--exclude <patterns>', 'Patterns à exclure')
   .option('--report <path>', 'Écrire un rapport (.json ou .md)')
   .option('--watch', 'Mode surveillance (re-convertit en continu)')
+  .option('--backup', 'Sauvegarder chaque source avant suppression')
+  .option('--backup-dir <dir>', 'Dossier de sauvegarde des sources supprimées')
+  .option('--clean', 'Supprimer les sorties générées orphelines')
+  .option('--concurrency <n>', 'Nombre maximal de conversions simultanées (0 = automatique)')
   .action(async (opts) => {
     const cwd = process.cwd();
     try {
       const cfg = mergeConfig(loadConfig(cwd), cliOptionsToConfig(opts));
-      if (cfg.quality < 1 || cfg.quality > 100) {
-        console.error(chalk.red('Qualité invalide (1-100)'));
-        process.exit(1);
-      }
       if (opts.watch) {
         startWatch(cwd, cfg);
         return;
       }
-      await executeRun(cfg, cwd, opts.report as string | undefined);
+      const results = await executeRun(cfg, cwd, opts.report as string | undefined);
+      if (hasConversionErrors(results)) process.exitCode = 1;
     } catch (e) {
       console.error(chalk.red(`Erreur: ${(e as Error).message}`));
       process.exit(1);

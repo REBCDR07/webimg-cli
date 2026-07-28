@@ -20,6 +20,8 @@ CLI TypeScript pour optimiser, convertir et générer des images web prêtes pou
 - Cache `.webimg-cache.json` invalide quand le fichier source ou les options changent.
 - Mode `--watch` pour relancer la conversion pendant le developpement.
 - Rapport console, JSON ou Markdown.
+- Suppression sûre avec backup optionnel et nettoyage des sorties orphelines.
+- Limite de concurrence configurable.
 - API programmatique utilisable dans un script Node.js.
 
 ## Prerequis
@@ -181,6 +183,11 @@ webimg run -i ./src/assets -o ./public/img -f webp,avif -q 80 -r
 | `--responsive <list>` | Densites a generer, par exemple `1,2,3` | aucune |
 | `--keep-metadata` | Conserve les metadata EXIF/IPTC/XMP | `false` |
 | `--replace` | Supprime le fichier source apres conversion reussie | `false` |
+| `--supp-ref` | Supprime les images sources scannees apres conversion reussie | `false` |
+| `--backup` | Sauvegarde la source avant suppression | `false` |
+| `--backup-dir <dir>` | Dossier de backup (conserve l'arborescence) | `.webimg-backup` |
+| `--clean` | Supprime les sorties generees orphelines | `false` |
+| `--concurrency <n>` | Nombre maximal de conversions simultanees, `0` = automatique | `0` |
 | `--dry-run` | Simule la conversion sans ecrire de fichiers | `false` |
 | `--no-cache` | Desactive le cache `.webimg-cache.json` | cache actif |
 | `--include <patterns>` | Patterns glob a inclure, separes par virgule | auto |
@@ -189,6 +196,22 @@ webimg run -i ./src/assets -o ./public/img -f webp,avif -q 80 -r
 | `--watch` | Surveille les changements et reconvertit | `false` |
 
 ## Exemples pratiques
+
+### Supprimer avec sauvegarde
+
+```bash
+webimg run -i ./src/assets -o ./public/img -f webp --replace --backup --backup-dir ./backups -r
+```
+
+La source n'est supprimee qu'apres conversion complete et copie reussie dans le backup. En cas d'erreur, elle est conservee.
+
+### Nettoyer les sorties orphelines
+
+```bash
+webimg run -i ./src/assets -o ./public/img -f webp --clean -r
+```
+
+`--clean` ne supprime que les fichiers de formats declares qui correspondent a des sorties generees et ne sont plus planifies.
 
 ### Optimiser un dossier d'assets
 

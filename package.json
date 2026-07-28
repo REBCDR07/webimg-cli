@@ -1,7 +1,8 @@
 {
   "name": "@eltkof7/webimg-cli",
-  "version": "0.0.1",
+  "version": "2.0.3",
   "description": "CLI ultra-rapide pour optimiser, convertir et générer des images responsive pour le web (WebP, AVIF).",
+  "readme": "README.md",
   "type": "module",
   "bin": {
     "webimg": "dist/index.js"
@@ -67,14 +68,15 @@
     "globby": "^14.0.2",
     "inquirer": "^12.11.1",
     "ora": "^8.1.0",
-    "sharp": "^0.33.5"
+    "sharp": "^0.35.3"
   },
   "devDependencies": {
+    "@eslint/js": "^9.11.0",
     "@types/cli-progress": "^3.11.6",
     "@types/inquirer": "^9.0.7",
     "@types/node": "^22.7.0",
-    "@typescript-eslint/eslint-plugin": "^8.8.0",
-    "@typescript-eslint/parser": "^8.8.0",
+    "@typescript-eslint/eslint-plugin": "^8.65.0",
+    "@typescript-eslint/parser": "^8.65.0",
     "eslint": "^9.11.0",
     "prettier": "^3.3.3",
     "tsup": "^8.3.0",

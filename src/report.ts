@@ -33,13 +33,14 @@ export interface ReportSummary {
 }
 
 export function summarize(results: ConvertResult[]): ReportSummary {
+  const completed = results.filter((r) => r.status === 'ok' || r.status === 'cached' || r.status === 'skipped');
   const ok = results.filter((r) => r.status === 'ok');
   const beforeBySource = new Map<string, number>();
-  for (const r of ok) {
+  for (const r of completed) {
     if (!beforeBySource.has(r.source)) beforeBySource.set(r.source, r.beforeSize);
   }
   const totalBefore = [...beforeBySource.values()].reduce((s, n) => s + n, 0);
-  const totalAfter = ok.reduce((s, r) => s + r.afterSize, 0);
+  const totalAfter = completed.reduce((s, r) => s + r.afterSize, 0);
   const saved = totalBefore - totalAfter;
   return {
     total: results.length,
@@ -59,14 +60,14 @@ export function summarize(results: ConvertResult[]): ReportSummary {
 export function printReport(s: ReportSummary): void {
   console.log(`\n📊 ${chalk.bold('Rapport')}`);
   console.log('─'.repeat(78));
-  const ok = s.results.filter((r) => r.status === 'ok');
-  if (ok.length > 0) {
+  const completed = s.results.filter((r) => r.status === 'ok' || r.status === 'cached' || r.status === 'skipped');
+  if (completed.length > 0) {
     console.log(
       chalk.bold(
         'Source'.padEnd(34) + 'Format'.padEnd(8) + 'Avant'.padEnd(12) + 'Après'.padEnd(12) + 'Gain',
       ),
     );
-    for (const r of ok) {
+    for (const r of completed) {
       const gain = formatGain(r.beforeSize, r.afterSize);
       const name = r.source.length > 32 ? '…' + r.source.slice(-31) : r.source;
       console.log(
@@ -119,7 +120,7 @@ export function writeMarkdownReport(p: string, s: ReportSummary): void {
     '| Source | Format | Avant | Après | Gain |',
     '|---|---|---|---|---|',
     ...s.results
-      .filter((r) => r.status === 'ok')
+      .filter((r) => r.status === 'ok' || r.status === 'cached' || r.status === 'skipped')
       .map((r) => {
         const gain = formatGain(r.beforeSize, r.afterSize);
         return `| ${r.source} | ${r.format}${r.density > 1 ? '@' + r.density + 'x' : ''} | ${formatBytes(r.beforeSize)} | ${formatBytes(r.afterSize)} | ${gain} |`;

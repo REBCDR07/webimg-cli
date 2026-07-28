@@ -92,6 +92,12 @@ export class ConversionCache {
 
   save(): void {
     if (!this.enabled) return;
-    fs.writeFileSync(this.file, JSON.stringify(this.data, null, 2));
+    const temporary = `${this.file}.${process.pid}.${Date.now()}.tmp`;
+    try {
+      fs.writeFileSync(temporary, JSON.stringify(this.data, null, 2));
+      fs.renameSync(temporary, this.file);
+    } finally {
+      try { fs.unlinkSync(temporary); } catch { /* already renamed */ }
+    }
   }
 }

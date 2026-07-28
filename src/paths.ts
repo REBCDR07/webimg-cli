@@ -28,9 +28,9 @@ export function toPosixPath(p: string): string {
 export function toDisplayPath(cwd: string, file: string): string {
   const abs = path.resolve(cwd, file);
   const rel = path.relative(cwd, abs);
-  if (rel && !rel.startsWith('..') && !path.isAbsolute(rel)) return path.normalize(rel);
+  if (rel && !rel.startsWith('..') && !path.isAbsolute(rel)) return toPosixPath(rel);
   if (rel === '') return '.';
-  return path.normalize(abs);
+  return toPosixPath(abs);
 }
 
 function relativeDirFromInput(sourcePath: string, cwd: string, cfg: Pick<Required<WebimgConfig>, 'input'>): string {

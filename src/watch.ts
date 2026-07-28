@@ -29,8 +29,25 @@ export function startWatch(cwd: string, cfg: Required<WebimgConfig>): void {
 
   console.log(chalk.blue(`👀 Surveillance de ${path.resolve(cwd, cfg.input)}...`));
 
+  const pending = new Set<string>();
+  let running = false;
   const handle = async (file: string) => {
     if (!re.test(file)) return;
+    if (pending.has(file)) return;
+    pending.add(file);
+    if (running) return;
+    running = true;
+    try {
+      while (pending.size) {
+        const next = pending.values().next().value as string;
+        pending.delete(next);
+        await processFile(next);
+      }
+    } finally {
+      running = false;
+    }
+  };
+  const processFile = async (file: string) => {
     const sourcePath = path.resolve(cwd, file);
     const eligible = await findImages(cwd, cfg);
     if (!eligible.some((candidate) => path.resolve(cwd, candidate) === sourcePath)) return;

@@ -6,6 +6,8 @@ import { ConversionCache } from './cache.js';
 import { planOutputs, toDisplayPath } from './paths.js';
 import type { OutputFormat, WebimgConfig } from './config.js';
 
+type SharpPipeline = ReturnType<typeof sharp>;
+
 export interface ConvertResult {
   source: string;
   output: string;
@@ -18,10 +20,10 @@ export interface ConvertResult {
 }
 
 async function applyFormat(
-  pipeline: sharp.Sharp,
+  pipeline: SharpPipeline,
   format: OutputFormat,
   quality: number,
-): Promise<sharp.Sharp> {
+): Promise<SharpPipeline> {
   switch (format) {
     case 'webp':
       return pipeline.webp({ quality });
@@ -110,6 +112,7 @@ export async function convertFile(
       continue;
     }
 
+    const tmp = `${out.output}.${process.pid}.${Date.now()}-${Math.random().toString(36).slice(2)}.tmp`;
     try {
       fs.mkdirSync(path.dirname(out.output), { recursive: true });
       let p = sharp(sourcePath);
@@ -127,7 +130,6 @@ export async function convertFile(
       }
       p = await applyFormat(p, out.format, cfg.quality);
 
-      const tmp = out.output + '.tmp';
       await p.toFile(tmp);
       fs.renameSync(tmp, out.output);
 
@@ -141,7 +143,7 @@ export async function convertFile(
         afterSize: fs.statSync(out.output).size,
       });
     } catch (err) {
-      try { fs.unlinkSync(out.output + '.tmp'); } catch { /* ignore */ }
+      try { fs.unlinkSync(tmp); } catch { /* ignore */ }
       results.push({
         source: displaySource,
         output: toDisplayPath(cwd, out.output),
@@ -159,8 +161,30 @@ export async function convertFile(
     cache.record(sourcePath, outPaths, optionsHash);
   }
 
-  if (!cfg.keepOriginal && !cfg.dryRun && results.every((r) => r.status === 'ok')) {
-    try { fs.unlinkSync(sourcePath); } catch { /* ignore */ }
+  if ((!cfg.keepOriginal || cfg.suppRef) && !cfg.dryRun && results.every((r) => r.status === 'ok')) {
+    try {
+      if (cfg.backup) {
+        const backupRoot = path.resolve(cwd, cfg.backupDir);
+        if (backupRoot === sourcePath || path.parse(backupRoot).root === backupRoot) {
+          throw new Error('Dossier de backup dangereux');
+        }
+        const backupPath = path.join(backupRoot, path.relative(cwd, sourcePath));
+        fs.mkdirSync(path.dirname(backupPath), { recursive: true });
+        fs.copyFileSync(sourcePath, backupPath, fs.constants.COPYFILE_EXCL);
+      }
+      fs.unlinkSync(sourcePath);
+    } catch (err) {
+      results.push({
+        source: displaySource,
+        output: displaySource,
+        format: outputs[0]?.format ?? cfg.formats[0],
+        density: 1,
+        status: 'error',
+        beforeSize,
+        afterSize: 0,
+        error: `Suppression refusée: ${(err as Error).message}`,
+      });
+    }
   }
 
   return results;
@@ -173,7 +197,7 @@ export async function runParallel(
   onProgress?: (done: number, total: number) => void,
 ): Promise<ConvertResult[]> {
   const cache = new ConversionCache(cwd, cfg.cache);
-  const concurrency = Math.max(1, Math.min(files.length, os.cpus().length));
+  const concurrency = Math.max(1, Math.min(files.length, cfg.concurrency || os.cpus().length));
   const all: ConvertResult[] = [];
   let index = 0;
   let done = 0;
@@ -190,4 +214,8 @@ export async function runParallel(
   await Promise.all(workers);
   cache.save();
   return all;
+}
+
+export function hasConversionErrors(results: ConvertResult[]): boolean {
+  return results.some((r) => r.status === 'error');
 }
